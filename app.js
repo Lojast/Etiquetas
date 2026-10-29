@@ -137,7 +137,15 @@
 
   const form = $('#f');
   const field = (name) => form.elements.namedItem(name);
-  const prefs = { copies: 1, ...(store.get('prefs') || {}) };
+  const DEFAULT_PAPER = { id: '150x100', w: 150, h: 100, fit: 'fit', rotate: false };
+  const PAPERS = [
+    ['150x100', 'Térmica 150 × 100 mm'], ['100x150', 'Térmica 100 × 150 mm'], ['100x100', 'Térmica 100 × 100 mm'],
+    ['100x75', 'Térmica 100 × 75 mm'], ['100x50', 'Térmica 100 × 50 mm'], ['80x50', 'Térmica 80 × 50 mm'],
+    ['60x40', 'Térmica 60 × 40 mm'], ['50x30', 'Térmica 50 × 30 mm'], ['105x148', 'A6 (105 × 148 mm)'],
+    ['148x210', 'A5 (148 × 210 mm)'], ['210x297', 'A4 (210 × 297 mm)'], ['216x279', 'Carta (216 × 279 mm)'],
+  ];
+  const savedPrefs = store.get('prefs') || {};
+  const prefs = { copies: 1, hide: [], ...savedPrefs, paper: { ...DEFAULT_PAPER, ...(savedPrefs.paper || {}) } };
   const touched = { imei: false };
   let raf = 0;
   let saveTimer = 0;
@@ -150,6 +158,7 @@
       else if (el.type === 'checkbox') { if (el.checked) s[el.name].push(el.value); }
       else s[el.name] = el.value.trim();
     }
+    s.hide = [...prefs.hide]; // campos que o usuário escondeu da etiqueta (vai junto no histórico)
     return s;
   }
 
@@ -484,7 +493,25 @@
   /*  Etiqueta 150 × 100 mm (preto e branco)                                 */
   /* ====================================================================== */
 
-  function buildTitle(s) {
+  /** Cópia do estado sem os campos que o usuário escondeu (valor vazio = a etiqueta não mostra). */
+  function applyHide(s) {
+    const h = s.hide || [];
+    if (!h.length) return s;
+    const o = { ...s };
+    const map = { storage: ['storage', 'storage_other'], ram: ['ram', 'ram_other'], color: ['color'], cond: ['cond'], imei: ['imei'],
+      serial: ['serial'], anumber: ['anumber'], sysver: ['sysver'], bh: ['bh'], cycles: ['cycles'], cname: ['cname'], cphone: ['cphone'],
+      cos: ['cos'], tester: ['tester'], date: ['date'], obs: ['obs'], defect: ['defect'] };
+    for (const k of h) (map[k] || []).forEach((f) => { o[f] = ''; });
+    if (h.includes('account')) o.account = 'N/A';
+    o.noSim = h.includes('simlock');
+    o.noWorks = h.includes('works');
+    o.noRep = h.includes('rep');
+    o.noLogo = h.includes('logo');
+    return o;
+  }
+
+  function buildTitle(s0) {
+    const s = applyHide(s0);
     if (s.devname) return s.devname;
     const storage = s.storage_other || s.storage;
     let base = s.model;
@@ -495,8 +522,9 @@
 
   const isApple = (s) => /apple|iphone|ipad|macbook|\bmac\b/i.test(`${s.brand} ${s.model} ${s.devname}`) || /^(ios|ipados|macos)/i.test(s.sysver);
 
-  function buildLabelHTML(s) {
-    const title = buildTitle(s);
+  function buildLabelHTML(s0) {
+    const s = applyHide(s0);
+    const title = buildTitle(s0);
     const storage = s.storage_other || s.storage;
     const ram = s.ram_other || s.ram;
     const apple = isApple(s);
@@ -518,7 +546,7 @@
     cells += cell('Condição', s.cond);
     if (s.bh) cells += cell('Bateria', `${s.bh}%`, s.cycles ? `${s.cycles} ciclos` : '');
     else if (s.cycles) cells += cell('Bateria', `${s.cycles} ciclos`);
-    if (mobile || s.simlock === 'Bloqueado') {
+    if (!s.noSim && (mobile || s.simlock === 'Bloqueado')) {
       cells += cell('Operadora', s.simlock === 'Bloqueado' ? 'BLOQUEADO' : 'Desbloqueado', '', s.simlock === 'Bloqueado');
     }
     if (s.account !== 'N/A' && (apple || mobile || s.account === 'Bloqueada')) {
@@ -527,7 +555,7 @@
         ? cell(name, 'BLOQUEADA', '', true)
         : cell(name, 'Livre', apple ? 'FMIP off' : '');
     }
-    cells += cell('Funcionamento', s.works === 'ok' ? '100% OK' : 'COM DEFEITO', '', s.works !== 'ok');
+    if (!s.noWorks) cells += cell('Funcionamento', s.works === 'ok' ? '100% OK' : 'COM DEFEITO', '', s.works !== 'ok');
     cells += cell('Sistema', s.sysver);
     cells += cell('Nº modelo', (s.anumber || '').toUpperCase());
 
@@ -565,10 +593,10 @@
     if (s.obs) meta.push(`<div class="obs"><b>Obs.:</b> ${esc(s.obs)}</div>`);
 
     return `<div class="lbl">
-      <div class="hd"><div class="logo">${logoHTML}</div><div class="own ${s.owner === 'cliente' ? 'cliente' : 'nosso'}">${s.owner === 'cliente' ? 'CLIENTE' : 'NOSSO'}</div></div>
+      <div class="hd"><div class="logo">${s.noLogo ? '' : logoHTML}</div><div class="own ${s.owner === 'cliente' ? 'cliente' : 'nosso'}">${s.owner === 'cliente' ? 'CLIENTE' : 'NOSSO'}</div></div>
       <div class="tt"><div class="title">${esc(title)}</div>${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>
       <div class="grid">${cells}</div>
-      <div class="box">${rep}</div>
+      ${s.noRep ? '' : `<div class="box">${rep}</div>`}
       ${defect}
       <div class="ft">${bc}<div class="meta">${meta.join('')}</div></div>
     </div>`;
@@ -620,8 +648,71 @@
   }
 
   function fitPreview() {
-    const k = $('#paper').clientWidth / (150 * 96 / 25.4);
+    const k = $('#paper').clientWidth / (prefs.paper.w * 96 / 25.4);
     $('#labelWrap').style.transform = `scale(${k})`;
+  }
+
+  /** Onde a etiqueta de 150 × 100 mm fica no papel escolhido (escala, giro e posição). */
+  function placement(p) {
+    const bw0 = p.rotate ? 100 : 150;
+    const bh0 = p.rotate ? 150 : 100;
+    const k = p.fit === 'fit' ? Math.min(p.w / bw0, p.h / bh0) : 1;
+    const bw = bw0 * k;
+    const bh = bh0 * k;
+    const x = (p.w - bw) / 2;
+    // em folha grande (A4…) a etiqueta vai para o topo; em papel de etiqueta, centralizada
+    const y = p.fit === 'fit' ? (bh / p.h > 0.6 ? (p.h - bh) / 2 : 6) : (p.h > bh * 1.5 ? 6 : 0);
+    const f = (n) => +n.toFixed(3);
+    return p.rotate
+      ? `translate(${f(x + bw)}mm,${f(y)}mm) rotate(90deg) scale(${f(k)})`
+      : `translate(${f(x)}mm,${f(y)}mm) scale(${f(k)})`;
+  }
+
+  const pageStyle = document.head.appendChild(document.createElement('style'));
+  function applyPaper() {
+    const p = prefs.paper;
+    const sz = `${p.w} × ${p.h} mm`;
+    root.style.setProperty('--pw', `${p.w}mm`);
+    root.style.setProperty('--ph', `${p.h}mm`);
+    root.style.setProperty('--ar', String(p.w / p.h));
+    pageStyle.textContent = `@page{size:${p.w}mm ${p.h}mm;margin:0}`;
+    $('#labelFit').style.transform = placement(p);
+    $('#sizeTag').textContent = sz;
+    $('#hdrSize').textContent = `Etiqueta ${sz}`;
+    $('#tipPaper').textContent = sz;
+    $('#dimW').textContent = `${p.w} mm`;
+    $('#dimH').textContent = `${p.h} mm`;
+    $('#paperSel').value = p.id;
+    $('#paperW').value = p.w;
+    $('#paperH').value = p.h;
+    $('#paperFit').value = p.fit;
+    $('#paperRot').checked = !!p.rotate;
+    fitPreview();
+  }
+  function setPaper(patch) {
+    prefs.paper = { ...prefs.paper, ...patch };
+    store.set('prefs', prefs);
+    applyPaper();
+  }
+
+  /** Caixinha "mostrar na etiqueta" ao lado de cada campo (tudo marcado por padrão). */
+  function initOptToggles() {
+    $$('[data-opt]').forEach((box) => {
+      const name = $('.lab', box).textContent.replace(/\(opcional\)/, '').trim();
+      const t = document.createElement('label');
+      t.className = 'opt';
+      t.title = 'Mostrar na etiqueta';
+      t.innerHTML = `<input type="checkbox" data-opt-for="${box.dataset.opt}" aria-label="Mostrar na etiqueta: ${esc(name)}">`;
+      box.append(t);
+    });
+    syncOpts();
+  }
+  function syncOpts() {
+    $$('[data-opt]').forEach((box) => {
+      const on = !prefs.hide.includes(box.dataset.opt);
+      $('input[data-opt-for]', box).checked = on;
+      box.classList.toggle('is-off', !on);
+    });
   }
 
   function renderAll() {
@@ -630,7 +721,7 @@
     applyConditionals(s);
     validate(s);
     updateProgress(s);
-    const lbl = renderLabelInto($('#labelWrap'), s);
+    const lbl = renderLabelInto($('#labelFit'), s);
     $('#overflowWarn').hidden = !lbl.dataset.overflow;
     fitPreview();
   }
@@ -645,7 +736,8 @@
   let savedTitle = '';
 
   const fillPrintRoot = (labelHTML) => {
-    printRoot.innerHTML = Array.from({ length: prefs.copies }, () => `<div class="sheet">${labelHTML}</div>`).join('');
+    const t = placement(prefs.paper);
+    printRoot.innerHTML = Array.from({ length: prefs.copies }, () => `<div class="sheet"><div class="lblfit" style="transform:${t}">${labelHTML}</div></div>`).join('');
   };
   const waitImages = (el) => Promise.all($$('img', el).map((i) => (i.complete ? null : i.decode().catch(() => null))));
   const printTitle = (s) => `Etiqueta ${buildTitle(s)}${s.imei ? ` ${s.imei.slice(-6)}` : s.serial ? ` ${s.serial.toUpperCase()}` : ''}`;
@@ -826,6 +918,36 @@
     $('input:not([type=radio]):not([type=checkbox]), input:checked, textarea', card)?.focus({ preventScroll: true });
   });
 
+  form.addEventListener('change', (e) => {
+    const key = e.target.dataset.optFor;
+    if (!key) return;
+    prefs.hide = e.target.checked ? prefs.hide.filter((k) => k !== key) : [...new Set([...prefs.hide, key])];
+    store.set('prefs', prefs);
+    syncOpts();
+    scheduleRender();
+  });
+  $('#optAll').addEventListener('click', () => {
+    prefs.hide = [];
+    store.set('prefs', prefs);
+    syncOpts();
+    scheduleRender();
+    toast('Todos os campos voltaram a aparecer na etiqueta', { tone: 'info' });
+  });
+
+  // papel: o último escolhido vira o padrão
+  $('#paperSel').innerHTML = [...PAPERS, ['custom', 'Personalizado…']].map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+  $('#paperSel').addEventListener('change', (e) => {
+    const v = e.target.value;
+    if (v === 'custom') { setPaper({ id: 'custom' }); $('.paperset__more').open = true; return; }
+    const [w, h] = v.split('x').map(Number);
+    setPaper({ id: v, w, h });
+  });
+  const customSize = () => setPaper({ id: 'custom', w: clamp(+$('#paperW').value || 150, 20, 400), h: clamp(+$('#paperH').value || 100, 20, 400) });
+  $('#paperW').addEventListener('change', customSize);
+  $('#paperH').addEventListener('change', customSize);
+  $('#paperFit').addEventListener('change', (e) => setPaper({ fit: e.target.value }));
+  $('#paperRot').addEventListener('change', (e) => setPaper({ rotate: e.target.checked }));
+
   $('#btnPrint').addEventListener('click', () => printLabel());
   $('#btnNew').addEventListener('click', newLabel);
   $('#btnTheme').addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true));
@@ -905,6 +1027,8 @@
   /* ====================================================================== */
 
   restoreForm();
+  initOptToggles();
+  applyPaper();
   setCopies(prefs.copies);
   updateHistBadge();
   updateLogoThumb();

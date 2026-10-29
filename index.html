@@ -70,7 +70,7 @@
     </a>
     <div class="app-header__title">
       <h1>Gerador de etiquetas</h1>
-      <span>Térmica 150 × 100 mm</span>
+      <span id="hdrSize">Etiqueta 150 × 100 mm</span>
     </div>
     <div class="app-header__actions">
       <button class="btn btn--secondary btn--icon btn--new" id="btnNew" type="button" aria-label="Nova etiqueta" title="Nova etiqueta (Alt+N)">
@@ -106,6 +106,7 @@
         <li class="stepper__item"><a class="stepper__dot" href="#blk-finalizacao"><span class="stepper__num">8</span><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></a></li>
       </ol>
     </nav>
+    <p class="hint optnote">Marque ou desmarque a caixinha ao lado de cada campo para mostrá-lo ou escondê-lo na etiqueta. <button type="button" class="linkbtn" id="optAll">Mostrar tudo</button></p>
 
     <form class="form" id="f" autocomplete="off" novalidate>
 
@@ -144,7 +145,7 @@
             <p class="hint" id="devnameHint">Se ficar vazio, o título usa marca + modelo + armazenamento.</p>
           </div>
 
-          <div class="group" role="radiogroup" aria-labelledby="l-storage">
+          <div class="group" role="radiogroup" aria-labelledby="l-storage" data-opt="storage">
             <span class="lab" id="l-storage">Armazenamento</span>
             <div class="chips">
               <label class="chip"><input type="radio" name="storage" value="32GB" data-deselect><span>32 GB</span></label>
@@ -160,7 +161,7 @@
 
           <div class="reveal" data-show-if="type=Notebook">
             <div class="reveal__in">
-              <div class="group" role="radiogroup" aria-labelledby="l-ram">
+              <div class="group" role="radiogroup" aria-labelledby="l-ram" data-opt="ram">
                 <span class="lab" id="l-ram">Memória RAM</span>
                 <div class="chips">
                   <label class="chip"><input type="radio" name="ram" value="4GB" data-deselect><span>4 GB</span></label>
@@ -174,12 +175,12 @@
             </div>
           </div>
 
-          <div class="field">
+          <div class="field" data-opt="color">
             <label class="lab" for="color">Cor</label>
             <input class="input" type="text" id="color" name="color" list="colorList" placeholder="Titânio Natural" autocapitalize="words" spellcheck="false">
           </div>
 
-          <div class="group" role="radiogroup" aria-labelledby="l-cond">
+          <div class="group" role="radiogroup" aria-labelledby="l-cond" data-opt="cond">
             <span class="lab" id="l-cond">Condição</span>
             <div class="chips">
               <label class="chip"><input type="radio" name="cond" value="Novo"><span>Novo</span></label>
@@ -199,7 +200,7 @@
         </header>
         <div class="card__body">
           <div class="row">
-            <div class="field" id="fld-imei">
+            <div class="field" id="fld-imei" data-opt="imei">
               <label class="lab" for="imei">IMEI</label>
               <div class="control control--status">
                 <input class="input input--mono" type="text" id="imei" name="imei" inputmode="numeric" maxlength="15" placeholder="15 dígitos" aria-describedby="imeiMsg" spellcheck="false">
@@ -211,17 +212,17 @@
               </div>
               <p class="msg" id="imeiMsg" role="status"></p>
             </div>
-            <div class="field">
+            <div class="field" data-opt="serial">
               <label class="lab" for="serial">Nº de série</label>
               <input class="input input--upper input--mono" type="text" id="serial" name="serial" placeholder="ex.: GHJ6FLVC61" autocapitalize="characters" spellcheck="false">
             </div>
           </div>
           <div class="row">
-            <div class="field">
+            <div class="field" data-opt="anumber">
               <label class="lab" for="anumber">Nº do modelo</label>
               <input class="input input--upper" type="text" id="anumber" name="anumber" placeholder="ex.: A3083" autocapitalize="characters" spellcheck="false">
             </div>
-            <div class="field">
+            <div class="field" data-opt="sysver">
               <label class="lab" for="sysver">Versão do sistema</label>
               <input class="input" type="text" id="sysver" name="sysver" placeholder="ex.: iOS 26.6" spellcheck="false">
             </div>
@@ -237,14 +238,14 @@
           <span class="pill pill--ok card__done"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="pill__txt">Preenchido</span></span>
         </header>
         <div class="card__body">
-          <div class="group" role="radiogroup" aria-labelledby="l-simlock">
+          <div class="group" role="radiogroup" aria-labelledby="l-simlock" data-opt="simlock">
             <span class="lab" id="l-simlock">Operadora</span>
             <div class="seg">
               <label class="seg__opt"><input type="radio" name="simlock" value="Desbloqueado" checked><span>Desbloqueado</span></label>
               <label class="seg__opt" data-tone="bad"><input type="radio" name="simlock" value="Bloqueado"><span>Bloqueado</span></label>
             </div>
           </div>
-          <div class="group" role="radiogroup" aria-labelledby="l-account">
+          <div class="group" role="radiogroup" aria-labelledby="l-account" data-opt="account">
             <span class="lab" id="l-account">Conta iCloud / Google</span>
             <div class="seg seg--3">
               <label class="seg__opt"><input type="radio" name="account" value="Livre" checked><span>Livre (FMIP off)</span></label>
@@ -273,16 +274,16 @@
           <div class="reveal" data-show-if="owner=cliente">
             <div class="reveal__in">
               <div class="reveal__stack">
-                <div class="field">
+                <div class="field" data-opt="cname">
                   <label class="lab" for="cname">Nome do cliente</label>
                   <input class="input" type="text" id="cname" name="cname" autocapitalize="words" autocomplete="off">
                 </div>
                 <div class="row">
-                  <div class="field">
+                  <div class="field" data-opt="cphone">
                     <label class="lab" for="cphone">Telefone</label>
                     <input class="input" type="tel" id="cphone" name="cphone" inputmode="tel" placeholder="(00) 00000-0000">
                   </div>
-                  <div class="field">
+                  <div class="field" data-opt="cos">
                     <label class="lab" for="cos">Nº da OS</label>
                     <input class="input" type="text" id="cos" name="cos" inputmode="numeric" placeholder="ex.: 1234">
                   </div>
@@ -303,7 +304,7 @@
         </header>
         <div class="card__body">
           <div class="row">
-            <div class="field" id="fld-bh">
+            <div class="field" id="fld-bh" data-opt="bh">
               <label class="lab" for="bh">Saúde da bateria</label>
               <div class="control control--suffix">
                 <input class="input" type="number" id="bh" name="bh" min="0" max="100" step="1" inputmode="numeric" placeholder="92" aria-describedby="bhMsg">
@@ -312,7 +313,7 @@
               <div class="gauge" id="bhGauge" aria-hidden="true"><i></i></div>
               <p class="msg" id="bhMsg" role="status"></p>
             </div>
-            <div class="field">
+            <div class="field" data-opt="cycles">
               <label class="lab" for="cycles">Ciclos de carga <em>(opcional)</em></label>
               <input class="input" type="number" id="cycles" name="cycles" min="0" step="1" inputmode="numeric" placeholder="573">
             </div>
@@ -328,7 +329,7 @@
           <span class="pill pill--ok card__done"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="pill__txt">Preenchido</span></span>
         </header>
         <div class="card__body">
-          <div class="group" role="radiogroup" aria-labelledby="l-rep">
+          <div class="group" role="radiogroup" aria-labelledby="l-rep" data-opt="rep">
             <span class="lab" id="l-rep">O aparelho já passou por reparos?</span>
             <div class="seg">
               <label class="seg__opt"><input type="radio" name="rep_has" value="nao" checked><span>Não, sem reparos</span></label>
@@ -382,7 +383,7 @@
           <span class="pill pill--ok card__done"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="pill__txt">Preenchido</span></span>
         </header>
         <div class="card__body">
-          <div class="group" role="radiogroup" aria-labelledby="l-works">
+          <div class="group" role="radiogroup" aria-labelledby="l-works" data-opt="works">
             <span class="lab" id="l-works">Resultado do teste</span>
             <div class="seg">
               <label class="seg__opt"><input type="radio" name="works" value="ok" checked><span>100% funcionando</span></label>
@@ -391,7 +392,7 @@
           </div>
           <div class="reveal" data-show-if="works=defeito">
             <div class="reveal__in">
-              <div class="field">
+              <div class="field" data-opt="defect">
                 <label class="lab" for="defect">Qual é o defeito?</label>
                 <input class="input" type="text" id="defect" name="defect" placeholder="ex.: Face ID não funciona" spellcheck="false">
               </div>
@@ -409,20 +410,20 @@
         </header>
         <div class="card__body">
           <div class="row">
-            <div class="field">
+            <div class="field" data-opt="tester">
               <label class="lab" for="tester">Testador</label>
               <input class="input" type="text" id="tester" name="tester" autocapitalize="words" placeholder="Quem testou o aparelho">
             </div>
-            <div class="field">
+            <div class="field" data-opt="date">
               <label class="lab" for="date">Data</label>
               <input class="input" type="date" id="date" name="date">
             </div>
           </div>
-          <div class="field">
+          <div class="field" data-opt="obs">
             <label class="lab" for="obs">Observações <em>(opcional)</em></label>
             <textarea class="input" id="obs" name="obs" rows="2" placeholder="ex.: acompanha caixa e cabo"></textarea>
           </div>
-          <div class="field">
+          <div class="field" data-opt="logo">
             <span class="lab" id="l-logo">Logo da loja na etiqueta</span>
             <div class="logo-row">
               <div class="logo-thumb" id="logoThumb" role="img" aria-label="Logo usada na etiqueta"></div>
@@ -444,19 +445,40 @@
     <div class="preview-card" id="previewCard">
       <div class="preview-head">
         <span class="live"><i aria-hidden="true"></i>Pré-visualização ao vivo</span>
-        <span class="size-tag">150 × 100 mm</span>
+        <span class="size-tag" id="sizeTag">150 × 100 mm</span>
       </div>
       <div class="stage">
         <div class="paper-wrap">
-          <div class="paper" id="paper"><div id="labelWrap"></div></div>
-          <div class="dim dim--v" aria-hidden="true"><span>100 mm</span></div>
-          <div class="dim dim--h" aria-hidden="true"><span>150 mm</span></div>
+          <div class="paper" id="paper"><div id="labelWrap"><div id="labelFit" class="lblfit"></div></div></div>
+          <div class="dim dim--v" aria-hidden="true"><span id="dimH">100 mm</span></div>
+          <div class="dim dim--h" aria-hidden="true"><span id="dimW">150 mm</span></div>
         </div>
       </div>
       <p class="overflow-warn" id="overflowWarn" role="status" hidden>
         <svg class="ic" aria-hidden="true"><use href="#i-triangle-alert"/></svg>
         <span>Conteúdo muito extenso: parte pode ser cortada na impressão. Encurte as observações, o nome ou a lista de reparos.</span>
       </p>
+      <div class="paperset">
+        <div class="field">
+          <label class="lab" for="paperSel">Papel da etiqueta</label>
+          <select class="input" id="paperSel"></select>
+        </div>
+        <details class="paperset__more">
+          <summary>Mais opções de papel</summary>
+          <div class="paperset__body">
+            <div class="row">
+              <div class="field"><label class="lab" for="paperW">Largura (mm)</label><input class="input" type="number" id="paperW" min="20" max="400" step="1" inputmode="numeric"></div>
+              <div class="field"><label class="lab" for="paperH">Altura (mm)</label><input class="input" type="number" id="paperH" min="20" max="400" step="1" inputmode="numeric"></div>
+            </div>
+            <div class="field">
+              <label class="lab" for="paperFit">Tamanho da etiqueta no papel</label>
+              <select class="input" id="paperFit"><option value="fit">Ajustar ao papel</option><option value="real">Tamanho real (150 × 100 mm)</option></select>
+            </div>
+            <label class="chip chip--check"><input type="checkbox" id="paperRot"><span><svg class="ic chip__check" aria-hidden="true"><use href="#i-check"/></svg>Girar 90° (papel em pé)</span></label>
+            <p class="hint">O papel escolhido fica salvo como padrão neste navegador.</p>
+          </div>
+        </details>
+      </div>
       <div class="printbar">
         <div class="copies" role="group" aria-label="Número de cópias">
           <span class="copies__label" id="l-copies">Cópias</span>
@@ -472,7 +494,7 @@
       </div>
       <p class="tip">
         <svg class="ic" aria-hidden="true"><use href="#i-info"/></svg>
-        <span><strong>Na janela de impressão:</strong> escolha a impressora térmica, papel <strong>150 × 100 mm</strong>, margens <strong>nenhuma</strong>, escala <strong>100%</strong> e desmarque “Cabeçalhos e rodapés”.</span>
+        <span><strong>Na janela de impressão:</strong> escolha a impressora térmica, papel <strong id="tipPaper">150 × 100 mm</strong>, margens <strong>nenhuma</strong>, escala <strong>100%</strong> e desmarque “Cabeçalhos e rodapés”.</span>
       </p>
     </div>
   </aside>
