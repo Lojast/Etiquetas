@@ -1022,11 +1022,38 @@
   new ResizeObserver(fitPreview).observe($('#paper'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => { if (!savedTheme()) setTheme(e.matches ? 'dark' : 'light', false); });
 
+  /**
+   * Vindo do app da Sofia (Aparelhos > Etiqueta): o endereço traz "#preencher=<dados>" com os campos deste
+   * formulário. Os dados ficam só no navegador (o "#" não vai para servidor nenhum).
+   */
+  function preencherDoApp() {
+    const m = /[#&]preencher=([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (!m) return;
+    try {
+      const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+      const bytes = Uint8Array.from(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)), (c) => c.charCodeAt(0));
+      const dados = JSON.parse(new TextDecoder().decode(bytes));
+      if (dados && typeof dados === 'object') {
+        const limpo = {};
+        for (const k of Object.keys(DEFAULTS)) {
+          if (k !== 'rep' && k !== 'date' && dados[k] !== undefined && dados[k] !== null) limpo[k] = String(dados[k]).slice(0, 300);
+        }
+        setState({ ...DEFAULTS, ...limpo, date: todayISO() });
+        saveForm();
+        setTimeout(() => toast('Dados do aparelho trazidos do app da Sofia. Confira e imprima.'), 300);
+      }
+    } catch (e) {
+      /* link estranho: segue com o rascunho que já estava */
+    }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
   /* ====================================================================== */
   /*  Início                                                                 */
   /* ====================================================================== */
 
   restoreForm();
+  preencherDoApp();
   initOptToggles();
   applyPaper();
   setCopies(prefs.copies);
